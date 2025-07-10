@@ -1,4 +1,4 @@
-package main
+package main // Исправлено имя пакета
 
 import (
 	"encoding/json"
@@ -12,11 +12,10 @@ import (
 )
 
 var (
-	secretKey = []byte("your-secret-key") // Замените в продакшене
-	users     = make(map[string]User)     // In-memory хранилище
+	secretKey = []byte("your-secret-key")
+	users     = make(map[string]User)
 )
 
-// Структуры данных
 type User struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
@@ -32,7 +31,32 @@ type AuthResponse struct {
 	Message string `json:"message"`
 }
 
-// Обработчики
+// Обработчик главной страницы
+func homeHandler(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html")
+	fmt.Fprintf(w, `
+	<!DOCTYPE html>
+	<html>
+	<head>
+		<title>JWT Auth Service</title>
+	</head>
+	<body>
+		<h1>Welcome to JWT Authentication Service</h1>
+		<p>Endpoints:</p>
+		<ul>
+			<li>POST /register - Register new user</li>
+			<li>POST /login - Login and get JWT token</li>
+			<li>GET /protected - Protected area (requires Authorization header)</li>
+		</ul>
+	</body>
+	</html>
+	`)
+}
+
 func registerHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -119,7 +143,6 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// Middleware для проверки JWT (пример)
 func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tokenString := r.Header.Get("Authorization")
@@ -146,10 +169,9 @@ func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 func main() {
 	// Регистрация роутов
+	http.HandleFunc("/", homeHandler) // Главная страница
 	http.HandleFunc("/register", registerHandler)
 	http.HandleFunc("/login", loginHandler)
-
-	// Пример защищенного эндпоинта
 	http.HandleFunc("/protected", authMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Welcome to protected area!"))
 	}))
